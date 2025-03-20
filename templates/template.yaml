@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31  # This is required for AWS SAM
+Resources:
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MyBasicLambda
+      CodeUri: ../vitamesh_v3
+      Handler: lambda_handler.lambda_handler
+      Runtime: python3.9  # Change based on your installed Python version
+      Role: !GetAtt LambdaExecutionRole.Arn
+      # Code:
+      #   ZipFile: |
+      #     import json
+
+      #     def lambda_handler(event, context):
+      #         return {
+      #             "statusCode": 200,
+      #             "body": json.dumps("Hello from Lambda!")
+      #         }
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: MyLambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+  DynamoDB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: dynamodb.yaml
+      TimeoutInMinutes: 10
+      Parameters:
+        Name: !Ref Name
+        Owner: !Ref Owner
+        Project: !Ref Project
+        DeletionPolicyParam: !Ref DeletionPolicyParam
+        NotificationTopic: !GetAtt NotificationResources.Outputs.OperationalNotificationTopicARN
